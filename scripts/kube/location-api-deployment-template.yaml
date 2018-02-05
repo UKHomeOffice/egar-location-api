@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.4.0 (c7964e7)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: location-api
+  name: location-api
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: location-api
+    spec:
+      containers:
+      - args:
+        - --spring.profiles.active=prod
+        - --prod.database.url=jdbc:postgresql://egar.chmjeqipapmr.eu-west-2.rds.amazonaws.com/egardb
+        - --prod.database.username=$(DB_USER)
+        - --prod.database.password=$(DB_PASS)
+        env:
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: egar-secret
+                key: dbuser
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: egar-secret
+                key: dbpass
+        image: pipe.egarteam.co.uk/egar-location-api:$LOCATION_API_VER
+        name: location-api
+        livenessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          httpGet:
+            path: /health
+            port: 8081
+        resources: {}
+      restartPolicy: Always
+status: {}
+

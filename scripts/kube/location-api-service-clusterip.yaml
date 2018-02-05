@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: location-api
+  name: location-api
+spec:
+  ports:
+  - port: 8081
+    protocol: TCP
+  selector:
+    io.kompose.service: location-api
+status:
+  loadBalancer: {}
+
