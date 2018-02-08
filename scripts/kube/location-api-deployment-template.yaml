@@ -37,10 +37,10 @@ spec:
         image: pipe.egarteam.co.uk/egar-location-api:$LOCATION_API_VER
         name: location-api
         livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
+          initialDelaySeconds: 90
+          periodSeconds: 30
           httpGet:
-            path: /health
+            path: /healthz
             port: 8081
         resources: {}
       restartPolicy: Always
