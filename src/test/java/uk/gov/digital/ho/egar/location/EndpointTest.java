@@ -13,9 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import uk.co.civica.microservice.util.testing.FileReaderUtils;
 import uk.gov.digital.ho.egar.location.service.repository.GeographicLocationPersistentRecordRepository;
+import uk.gov.digital.ho.egar.location.service.repository.model.GeographicLocationPersistentRecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,7 +25,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static uk.co.civica.microservice.util.testing.matcher.RegexMatcher.matchesRegex;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @RunWith(SpringRunner.class)
@@ -282,6 +288,128 @@ public class EndpointTest {
 	        .andExpect(status().isSeeOther())
 	        ;
 	
+	}
+	
+	//---------------------------------------------------------------------------------------------------------
+	
+	@Test
+	public void shouldOnlyBulkfetchPeopleInListAndForThisUser() throws Exception{
+		// WITH
+		repo.deleteAll();
+		UUID userUuid = UUID.randomUUID();
+
+		List<UUID> locationUuids = new ArrayList<>();
+
+		// add three locations for the current user and save ids to list
+		for (int i=0; i<3 ; i++) {
+			UUID locationUuid = UUID.randomUUID();
+			GeographicLocationPersistentRecord location = GeographicLocationPersistentRecord.builder()
+							.locationUuid(locationUuid)
+							.userUuid(userUuid)
+							.dateTimeAt(ZonedDateTime.now())
+							.icaoCode("EGLL")
+							.build();
+
+		repo.saveAndFlush(location);
+			locationUuids.add(locationUuid);
+		}
+		// add a location for user but dont add to list
+		UUID locationUuid = UUID.randomUUID();
+			GeographicLocationPersistentRecord location = GeographicLocationPersistentRecord.builder()
+							.locationUuid(locationUuid)
+							.userUuid(userUuid)
+							.dateTimeAt(ZonedDateTime.now())
+							.icaoCode("EGLL")
+							.build();
+
+		repo.saveAndFlush(location);
+		// add a location for different user
+		UUID locationUuidOther = UUID.randomUUID();
+		UUID UuidDiffUser = UUID.randomUUID();
+		GeographicLocationPersistentRecord otherLocation = GeographicLocationPersistentRecord.builder()
+							.locationUuid(locationUuidOther)
+							.userUuid(UuidDiffUser)
+							.dateTimeAt(ZonedDateTime.now())
+							.icaoCode("EGLL")
+							.build();
+
+		repo.saveAndFlush(otherLocation);
+		locationUuids.add(locationUuidOther);
+		// WHEN
+		MvcResult result =
+				this.mockMvc
+				.perform(post("/api/v1/locations/Summaries")
+						.header("x-auth-subject", userUuid)
+						.contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+						.content(objectMapper.writeValueAsString(locationUuids)))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+				//THEN
+				.andExpect(jsonPath("$").exists())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$", hasSize(3)))
+				.andExpect(jsonPath("$[*].location_uuid", hasItems(locationUuids.get(0).toString(),locationUuids.get(1).toString(),locationUuids.get(2).toString()))).andReturn();
+		//Check it doesn't contain other locations
+		String response = result.getResponse().getContentAsString();
+		assertFalse(response.contains(locationUuid.toString()));
+		assertFalse(response.contains(locationUuids.get(3).toString()));
+
+	}
+
+	@Test
+	public void bulkFetchShouldReturnEmptyArrayIfNoMatch() throws Exception{
+		// WITH
+		repo.deleteAll();
+		UUID userUuid       = UUID.randomUUID();
+		List<UUID> locationUuids = new ArrayList<>();
+		for (int i=0; i<3 ; i++) {
+			locationUuids.add(UUID.randomUUID());
+		}
+		// WHEN
+		this.mockMvc
+		.perform(post("/api/v1/locations/Summaries")
+				.header("x-auth-subject", userUuid)
+				.contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+				.content(objectMapper.writeValueAsString(locationUuids)))
+		// THEN
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$").exists())
+		.andExpect(jsonPath("$").isArray())
+		.andExpect(jsonPath("$", hasSize(0)));
+	}
+	
+	@Test
+	public void bulkFetchShouldNotContainDuplicateData() throws Exception{
+		// WITH
+		repo.deleteAll();
+		UUID userUuid = UUID.randomUUID();
+		UUID locationUuid  = UUID.randomUUID();
+		
+		// add gar for user
+		GeographicLocationPersistentRecord location = GeographicLocationPersistentRecord.builder()
+							.locationUuid(locationUuid)
+							.userUuid(userUuid)
+							.dateTimeAt(ZonedDateTime.now())
+							.icaoCode("EGLL")
+							.build();
+
+
+		repo.saveAndFlush(location);
+		
+		List<UUID> locationUuids = new ArrayList<>();
+		// add same location uuid to request list
+		locationUuids.add(locationUuid);
+		locationUuids.add(locationUuid);
+		// WHEN
+		this.mockMvc
+		.perform(post("/api/v1/locations/Summaries")
+				.header("x-auth-subject", userUuid)
+				.contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+				.content(objectMapper.writeValueAsString(locationUuids)))
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$").exists())
+		.andExpect(jsonPath("$").isArray())
+		.andExpect(jsonPath("$", hasSize(1)));
 	}
 
 }

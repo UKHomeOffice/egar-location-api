@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import uk.gov.digital.ho.egar.constants.ServicePathConstants;
@@ -43,6 +44,7 @@ import uk.gov.digital.ho.egar.location.model.GeographicLocation;
 import uk.gov.digital.ho.egar.location.model.GeographicLocationWithUuid;
 import uk.gov.digital.ho.egar.location.service.GeographicLocationService;
 import uk.gov.digital.ho.egar.location.service.repository.model.GeographicLocationPersistentRecord;
+import uk.gov.digital.ho.egar.shared.auth.api.token.AuthValues;
 
 @RestController
 @RequestMapping(PathConstants.ROOT_PATH)
@@ -141,6 +143,34 @@ public class GeographicLocationRestController implements LocationsRestAPI {
 
 		return new ResponseEntity<Void>(responseHeaders, HttpStatus.SEE_OTHER);
 	}
+	
+	//---------------------------------------------------------------------------------------------------------
+    
+    /**
+     * A get endpoint that bulk retrieves a list of locations
+     */
+    
+    
+    @Override
+    @ApiOperation(value = "Bulk retrieve a list of locations.",
+            notes = "Retrieve a list of existing location	 for a user")
+    @ApiResponses(value = {
+    		@ApiResponse(
+                    code = 200,
+                    message = "Successful retrieval",
+                    response = GeographicLocationWithUuid[].class),
+            @ApiResponse(
+                    code = 401,
+                    message = "Unauthorised")})
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping(path = PathConstants.PATH_BULK,
+    			consumes = MediaType.APPLICATION_JSON_VALUE,
+           		produces = MediaType.APPLICATION_JSON_VALUE)
+    public GeographicLocationWithUuid[] bulkRetrieveLocations(@RequestHeader(AuthValues.USERID_HEADER) UUID uuidOfUser, 
+    									   					  @RequestBody List<UUID> locationUuids) {
+    	
+    	return this.geoService.getBulkLocations(uuidOfUser,locationUuids);
+    }
 
 	private GeographicLocationWithUuid validateAndSetUuids(UUID userUuid, UUID locationUuid,
 			GeographicLocation location) throws BadOperationLocationApiException {

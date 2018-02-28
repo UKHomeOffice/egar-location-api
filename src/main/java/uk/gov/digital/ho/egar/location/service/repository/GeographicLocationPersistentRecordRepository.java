@@ -15,5 +15,6 @@ public interface GeographicLocationPersistentRecordRepository extends JpaReposit
 	GeographicLocationPersistentRecord findOneByLocationUuidAndUserUuid(UUID locationUuid,UUID userUuid);
 	List<GeographicLocationPersistentRecord> findAllByUserUuid(UUID userUuid);
 	Long countByUserUuid(UUID userUuid);
+	List<GeographicLocationPersistentRecord> findAllByUserUuidAndLocationUuidIn(UUID uuidOfUser, List<UUID> locationUuids);
 	
 }

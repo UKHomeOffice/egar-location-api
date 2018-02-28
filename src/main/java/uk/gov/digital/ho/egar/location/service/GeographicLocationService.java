@@ -1,5 +1,6 @@
 package uk.gov.digital.ho.egar.location.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import uk.gov.digital.ho.egar.location.api.exceptions.DataNotFoundLocationApiException;
@@ -20,4 +21,6 @@ public interface GeographicLocationService {
 	
 	GeographicLocationWithUuid addLocation(UUID userUuid,GeographicLocation newLoc) throws LocationApiException;
 	GeographicLocationWithUuid updateLocation(GeographicLocationWithUuid loc) throws LocationApiException;
+
+	GeographicLocationWithUuid[] getBulkLocations(final UUID uuidOfUser, final List<UUID> locationUuids);
 }

@@ -12,5 +12,7 @@ public interface PathConstants {
 	
 	String PATH_LOCATION_VAR = "location_uuid";
 	String PATH_LOCATION = "{" + PATH_LOCATION_VAR + "}";
+	
+	String PATH_BULK = "/Summaries";
 
 }

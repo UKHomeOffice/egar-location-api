@@ -1,5 +1,6 @@
 package uk.gov.digital.ho.egar.location.service.impl;
 
+import java.util.List;
 import java.util.UUID;
 
 import javax.validation.ConstraintViolationException;
@@ -99,6 +100,16 @@ public class GeographicLocationServiceDatabaseImpl implements GeographicLocation
 		}
 		
 		return record ;
+	}
+
+	@Override
+	public GeographicLocationWithUuid[] getBulkLocations(UUID uuidOfUser, List<UUID> locationUuids) {
+
+		List<GeographicLocationPersistentRecord> locationsList = repository.findAllByUserUuidAndLocationUuidIn(uuidOfUser,locationUuids);
+		GeographicLocationWithUuid[] locationsArray = new GeographicLocationWithUuid[locationsList.size()];
+		locationsArray = locationsList.toArray(locationsArray);
+		
+		return locationsArray;
 	}
 
 }

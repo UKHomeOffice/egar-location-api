@@ -1,5 +1,6 @@
 package uk.gov.digital.ho.egar.location.api;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -45,4 +46,13 @@ public interface LocationsRestAPI  {
 	 * @throws LocationApiException 
 	 */
 	ResponseEntity<Void> updateLocation(UUID userUuid, UUID locationUuid, GeographicLocation location,  Errors errors) throws LocationApiException;
+
+
+	/**
+	 * Retrieve a list of locations
+	 * @param uuidOfUser
+	 * @param locationUuids
+	 * @return list of locations
+	 */
+	GeographicLocationWithUuid[] bulkRetrieveLocations(final UUID uuidOfUser, final List<UUID> locationUuids);
 }
